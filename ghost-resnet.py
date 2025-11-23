@@ -132,17 +132,18 @@ print("======================================")
 print("ResNet56")
 print("======================================")
 model = ResNet56()
-# print(model)
-
+# # print(model)
+#
 convert_to_ghost_resnet(model, ratio = 2, dw_kernel_size = 3)
-
+#
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
-
+#
 optimizer = optim.SGD(model.parameters(), lr = 0.1, momentum = 0.9, weight_decay = 1e-4)
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = 200)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 150], gamma=0.1)
+# scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = 200)
 criterion = nn.CrossEntropyLoss()
-
+#
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
@@ -203,19 +204,160 @@ def test(epoch):
     acc = 100. * correct / total
     print(f'Epoch {epoch} Test Acc: {acc:.3f}%')
     return acc
+#
+#
+# print(f"Starting training on {device} for 200 epochs...")
+# best_acc = 0.0
+#
+# for epoch in range(200):
+#     train(epoch)
+#     acc = test(epoch)
+#     scheduler.step()
+#
+#     if acc > best_acc:
+#         best_acc = acc
+#         torch.save(model.state_dict(), 'gr_cosine.pth')
+#
+# print(f"\nFinal Best Accuracy: {best_acc:.3f}%")
+# print(f"Paper Target: 92.7%")
 
 
-print(f"Starting training on {device} for 200 epochs...")
-best_acc = 0.0
 
-for epoch in range(200):
-    train(epoch)
-    acc = test(epoch)
-    scheduler.step()
-    
-    if acc > best_acc:
-        best_acc = acc
-        torch.save(model.state_dict(), 'ghost_resnet56_best.pth')
+# best_acc = 0.0
+#
+# print("======================================")
+# print("STARTING TRAINING")
+# print("======================================")
+#
+# besct_acc = 0.0
+#
+# for epoch in range(200):
+#     train(epoch)
+#     acc = test(epoch)
+#     scheduler.step()
+#     if acc > best_acc:
+#         best_acc = acc
+#         torch.save(model.state_dict(), 'gr_multistep.pth')
+#         print(f"saved highest accuracy yet - {best_acc}")
+#
+#
+# print("======================================")
+# print(f"FINAL BEST ACCURACY: {best_acc}")
+# print("======================================")
 
-print(f"\nFinal Best Accuracy: {best_acc:.3f}%")
-print(f"Paper Target: 92.7%")
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+
+# import matplotlib
+# matplotlib.use("Agg")
+# import matplotlib.pyplot as plt
+# import numpy
+#
+# def visualize_ghost_module(model, image_index=0):
+#     model.eval()
+#     image, label = testset[image_index]
+#     input_tensor = image.unsqueeze(0).to(device)
+#     target_module = model.layer1[0].conv1 # this is the first ghost module of the network
+#     feature_maps = {}
+#
+#     def hook_fn(module, input, output):
+#         x = input[0]
+#         x1 = module.primary_conv(x)
+#         x2 = module.cheap_operations(x1)
+#         feature_maps['intrinsic'] = x1.detach().cpu()
+#         feature_maps['ghost'] = x2.detach().cpu()
+#
+#     handle = target_module.register_forward_hook(hook_fn)
+#     with torch.no_grad():
+#         model(input_tensor)
+#     handle.remove()
+#     return feature_maps, image
+#
+# def plot_and_save_ghosts(maps, filename="images/ghost_visualization.png"):
+#     intrinsic = maps['intrinsic'][0]
+#     ghosts = maps['ghost'][0]
+#     num_pairs = min(len(intrinsic), len(ghosts))
+#     fig, axes = plt.subplots(num_pairs, 2, figsize = (6, 2 * num_pairs))
+#     fig.suptitle(f"Intrinsic vs Ghost Features (Layer 1)", fontsize=16)
+#
+#     for i in range(num_pairs):
+#         # plotting intrinsic
+#         axes[i, 0].imshow(intrinsic[i], cmap='viridis')
+#         axes[i, 0].axis('off')
+#         if i == 0: axes[i, 0].set_title("Intrinsic (Primary)")
+#
+#         # plotting ghost
+#         axes[i, 1].imshow(ghosts[i], cmap='viridis')
+#         axes[i, 1].axis('off')
+#         if i == 0: axes[i, 1].set_title("Ghost (Cheap Op)")
+#
+#     plt.tight_layout()
+#     plt.savefig(filename)
+#     print(f"\n[Success] Visualization saved to: {filename}")
+#     plt.close(fig)
+#
+# if __name__ == "__main__":
+#     model.load_state_dict(torch.load('./gr_multistep.pth'))
+#     print("extracting features...")
+#     maps, raw_img = visualize_ghost_module(model, image_index=20)
+#     plot_and_save_ghosts(maps, "images/ghost_resnet_image_20")
+
+
+
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+# ==============================================================================
+
+# CREATING STANDARD RESNET-56...
+# CREATING GHOST-RESNET-56 (S=2)...
+#
+# MEASURING STANDARD RESNET-56...
+#   FLOPS: 127.93 M
+#   PARAMS: 0.86 M
+#
+# MEASURING GHOST-RESNET-56...
+#   FLOPS: 67.50 M
+#   PARAMS: 0.44 M
+#
+# RESULTS:
+#   FLOPS REDUCTION: 1.90X (PAPER CLAIMS ~2X)
+#   PARAM REDUCTION: 1.95X (PAPER CLAIMS ~2X)
+
+# import torch
+# from thop import profile
+# from copy import deepcopy
+#
+# def count_parameters(model):
+#     return sum(p.numel() for p in model.parameters() if p.requires_grad)
+#
+# def compare_efficiency():
+#     print("creating standard resnet-56...")
+#     standard_model = ResNet56()
+#     print("creating ghost-resnet-56 (s=2)...")
+#     ghost_model = deepcopy(standard_model)
+#     convert_to_ghost_resnet(ghost_model, ratio=2, dw_kernel_size=3)
+#     input_tensor = torch.randn(1, 3, 32, 32) # dummy input
+#
+#     print("\nmeasuring standard resnet-56...")
+#     flops_std, params_std = profile(standard_model, inputs=(input_tensor, ), verbose=False)
+#     print(f"  flops: {flops_std / 1e6:.2f} m")
+#     print(f"  params: {params_std / 1e6:.2f} m")
+#
+#     print("\nmeasuring ghost-resnet-56...")
+#     flops_ghost, params_ghost = profile(ghost_model, inputs=(input_tensor, ), verbose=False)
+#     print(f"  flops: {flops_ghost / 1e6:.2f} m")
+#     print(f"  params: {params_ghost / 1e6:.2f} m")
+#
+#     print("\nresults:")
+#     print(f"  flops reduction: {flops_std / flops_ghost:.2f}x (paper claims ~2x)")
+#     print(f"  param reduction: {params_std / params_ghost:.2f}x (paper claims ~2x)")
+#
+# if __name__ == "__main__":
+#     compare_efficiency()
