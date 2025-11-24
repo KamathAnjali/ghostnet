@@ -61,18 +61,18 @@ results: param reduction: 1.96x (48.97% reduction)
 
 | no. | ratio(s) | kernel(d)   | optimizer | lr_scheduler    | accuracy(ours) | accuracy(paper) | epochs | file                 |
 | --- | -------- | ----------- | --------- | --------------- | -------------- | --------------- | ------ | -------------------- |
-| 1   | 2        | 3,5(varied) | SGD       | constant(0.005) | 8.5% mAP       | 26.9%           | 12     | ghostnet_faster_rcnn |
+| 1   | 2        | 3,5(varied) | sgd       | constant(0.005) | 8.5% map       | 26.9%           | 12     | ghostnet_faster_rcnn |
 
-- the models mentioned in the paper used sgd for 12 epochs from imagenet pretrained weights, but our model was trained from scratch. hence there's a huge difference in mAP between the paper's results and ours
+- the models mentioned in the paper used sgd for 12 epochs from imagenet pretrained weights, but our model was trained from scratch. hence there's a huge difference in map between the paper's results and ours
 - the paper used 1.1 as the width multiplier, but we used 1.0 as the width multiplier to decrease the computation required
 - but the decrease in computation between mobile net models is consistent with the paper. the model uses half the compute of what mobilenet uses. our model can match the results of mobilenet if trained for more epochs
 
 ```
-ghostnet backbone (1.0x) flops: 149.31M
-ghostnet backbone (1.0x) params: 1.06M
+ghostnet backbone (1.0x) flops: 149.31m
+ghostnet backbone (1.0x) params: 1.06m
 
 --- paper comparison (table 8) ---
-mobilenetv2 backbone flops:  300M
-mobilenetv3 backbone flops:  219M
-ghostnet 1.1x backbone flops: 164M
+mobilenetv2 backbone flops:  300m
+mobilenetv3 backbone flops:  219m
+ghostnet 1.1x backbone flops: 164m
 ```
